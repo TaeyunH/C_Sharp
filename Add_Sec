@@ -1,0 +1,115 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using System.Security.Cryptography;
+using System.Data.SqlClient;
+
+namespace WinFormsApp3
+{
+    public partial class Form2 : Form
+    {
+        public string Username { get; private set; }
+        public string Password { get; private set; }
+        private string connectionString = "Server=YOURSERVER";
+
+
+        public Form2()
+        {
+            InitializeComponent();
+        }
+
+        private void textBoxUsername_TextChanged(object sender, EventArgs e)
+        {
+            //username event
+        }
+
+        private void buttonLogin_Click(object sender, EventArgs e)
+        {
+            Username = textBoxUsername.Text;
+            Password = textBoxPassword.Text;
+
+            //1. Input Validation
+            if (string.IsNullOrWhiteSpace(Username) || string.IsNullOrWhiteSpace(Password))
+            {
+                MessageBox.Show("Please enter both username and password.");
+                return;
+            }
+            //2. Check for SQL Injection
+            if (Username.Contains("'") || Username.Contains("--") || Password.Contains("'") || Password.Contains("--"))
+            {
+                MessageBox.Show("Invalid characters detected in username or password.");
+                return;
+            }
+
+            // 3. Authentication & Authorization 
+            if (AuthenticateUser(Username, Password))
+            {
+                MessageBox.Show("Login successful. Welcome!");
+            }
+            else
+            {
+                MessageBox.Show("Invalid username or password.");
+                return;
+            }
+
+            // 4. Error Handling
+            try
+            {
+                this.DialogResult = DialogResult.OK;
+                this.Close();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("An error occurred: " + ex.Message);
+
+            }
+        }
+
+        //AuthenticateUser
+        private bool AuthenticateUser(string username, string password)
+        {
+            // encryptedPassword
+            byte[] encryptedPassword = EncryptPasswordToBytes(password);
+
+            // Connect
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                try
+                {
+                    connection.Open();
+                    // User verify
+                    string query = "SELECT COUNT(1) FROM Users WHERE Username = @username AND PasswordHash = @passwordHash";
+                    SqlCommand command = new SqlCommand(query, connection);
+                    command.Parameters.AddWithValue("@username", username);
+                    command.Parameters.Add("@passwordHash", SqlDbType.VarBinary).Value = encryptedPassword;
+
+                    int count = Convert.ToInt32(command.ExecuteScalar());
+
+                    // User verify with true
+                    return count == 1;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Database error: " + ex.Message);
+                    return false;
+                }
+            }
+        }
+
+        // SHA256 Encryption
+        private byte[] EncryptPasswordToBytes(string password)
+        {
+            using (SHA256 sha256Hash = SHA256.Create())
+            {
+                return sha256Hash.ComputeHash(Encoding.UTF8.GetBytes(password));
+            }
+        }
+
+    }
+}
