@@ -1,0 +1,148 @@
+using System;
+using System.Diagnostics;
+
+class Program
+{
+    // Merge Sort Algorithm Implementation
+    // divides the input array into two halves, sorts each half, and then merges them back together to form a sorted array.
+    static void MergeSort(int[] array)
+    {
+        //If the array length is 1 or less, there is no need to sort, so the function exits.
+        if (array.Length <= 1) return;
+
+        //The midpoint of the array is calculated to divide the array into two halves.
+        int mid = array.Length / 2;
+        int[] left = new int[mid];
+        int[] right = new int[array.Length - mid];
+
+        Array.Copy(array, 0, left, 0, mid);
+        Array.Copy(array, mid, right, 0, array.Length - mid);
+
+        MergeSort(left);
+        MergeSort(right);
+        Merge(array, left, right);
+    }
+
+    // Merge two sorted arrays
+    static void Merge(int[] array, int[] left, int[] right)
+    {
+        int i = 0, j = 0, k = 0;
+        while (i < left.Length && j < right.Length)
+        {
+            if (left[i] <= right[j])
+                array[k++] = left[i++];
+            else
+                array[k++] = right[j++];
+        }
+
+        while (i < left.Length)
+            array[k++] = left[i++];
+
+        while (j < right.Length)
+            array[k++] = right[j++];
+    }
+
+    // Measure execution time of sorting
+    static double MeasureSortTime(Action<int[]> sortFunction, int[] data)
+    {
+        //calculates the time taken to sort an array using the given sorting method.
+        //It captures the start and end times, computes the elapsed time, and returns it in milliseconds.
+        int[] copy = (int[])data.Clone();
+        Stopwatch stopwatch = Stopwatch.StartNew();
+        sortFunction(copy);
+        stopwatch.Stop();
+        return stopwatch.Elapsed.TotalMilliseconds;
+    }
+
+    // Main function
+    static void Main(string[] args)
+    {
+        // Create data sets
+        int[] smallData = GenerateRandomArray(10);       
+        int[] mediumData = GenerateRandomArray(1000);    
+        int[] largeData = GenerateRandomArray(10000);    
+
+        // Measure execution times of original Merge Sort
+        double smallTime = MeasureSortTime(MergeSort, smallData);
+        double mediumTime = MeasureSortTime(MergeSort, mediumData);
+        double largeTime = MeasureSortTime(MergeSort, largeData);
+
+        Console.WriteLine($"Original Merge Sort Execution Times:");
+        Console.WriteLine($"Small dataset: {smallTime} ms");
+        Console.WriteLine($"Medium dataset: {mediumTime} ms");
+        Console.WriteLine($"Large dataset: {largeTime} ms");
+
+        // Optimization attempt: Reduced array copy overhead
+        //minimizing array copying by using a single auxiliary array throughout the recursion.
+        //avoids the repetitive allocation and copying of smaller arrays at each recursive level, enhancing performance.
+        double smallOptimizedTime = MeasureSortTime(OptimizedMergeSort, smallData);
+        double mediumOptimizedTime = MeasureSortTime(OptimizedMergeSort, mediumData);
+        double largeOptimizedTime = MeasureSortTime(OptimizedMergeSort, largeData);
+
+        Console.WriteLine($"\nOptimized Merge Sort Execution Times:");
+        Console.WriteLine($"Small dataset: {smallOptimizedTime} ms");
+        Console.WriteLine($"Medium dataset: {mediumOptimizedTime} ms");
+        Console.WriteLine($"Large dataset: {largeOptimizedTime} ms");
+    }
+
+    // Generate random array
+    static int[] GenerateRandomArray(int size)
+    {
+        Random random = new Random();
+        int[] array = new int[size];
+        for (int i = 0; i < size; i++)
+        {
+            //generates an array of random integers of a specified size.
+            //Each element is assigned a random number between 0 and 100,000.
+            array[i] = random.Next(0, 100000);
+        }
+        return array;
+    }
+
+    // Optimized version of Merge Sort to reduce copying overhead
+    static void OptimizedMergeSort(int[] array)
+    {
+        int[] temp = new int[array.Length];
+        OptimizedMergeSortRecursive(array, temp, 0, array.Length - 1);
+    }
+
+    static void OptimizedMergeSortRecursive(int[] array, int[] temp, int leftStart, int rightEnd)
+    {
+        if (leftStart >= rightEnd) return;
+
+        int mid = (leftStart + rightEnd) / 2;
+        OptimizedMergeSortRecursive(array, temp, leftStart, mid);
+        OptimizedMergeSortRecursive(array, temp, mid + 1, rightEnd);
+        MergeHalves(array, temp, leftStart, rightEnd);
+    }
+
+    static void MergeHalves(int[] array, int[] temp, int leftStart, int rightEnd)
+    {
+        int leftEnd = (rightEnd + leftStart) / 2;
+        int rightStart = leftEnd + 1;
+        int size = rightEnd - leftStart + 1;
+
+        int left = leftStart;
+        int right = rightStart;
+        int index = leftStart;
+
+        while (left <= leftEnd && right <= rightEnd)
+        {
+            if (array[left] <= array[right])
+            {
+                temp[index] = array[left];
+                left++;
+            }
+            else
+            {
+                temp[index] = array[right];
+                right++;
+            }
+            index++;
+        }
+
+        Array.Copy(array, left, temp, index, leftEnd - left + 1);
+        Array.Copy(array, right, temp, index, rightEnd - right + 1);
+        Array.Copy(temp, leftStart, array, leftStart, size);
+    }
+}
