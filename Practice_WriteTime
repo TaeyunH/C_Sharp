@@ -1,0 +1,16 @@
+using System;
+class program
+{
+    static void WriteTime (int hour, int minute)
+    {
+        Console.Write(hour);
+        Console.Write(":");
+        Console.Write(minute);
+    }
+    static void Main()
+    {
+        int hour = 11;
+        int minute = 59;
+        WriteTime(hour, minute);
+    }
+}
